@@ -1,18 +1,15 @@
-extern crate smallvec;
-extern crate textwrap;
-extern crate unicode_width;
-
 use smallvec::*;
-use std::io::{Result, Write};
+use std::io::{Write};
 use std::iter::repeat;
 use std::str;
 use textwrap::fill;
 use unicode_width::UnicodeWidthStr;
+use wasm_bindgen::prelude::*;
 
 // Constants! :D
 const ENDSL: &[u8] = b"| ";
 const ENDSR: &[u8] = b" |\n";
-#[cfg(not(feature = "clippy"))]
+
 const FERRIS: &[u8] = br#"
         \
          \
@@ -22,7 +19,6 @@ const FERRIS: &[u8] = br#"
           / '-----' \
 "#;
 
-#[cfg(feature = "clippy")]
 const CLIPPY: &[u8] = br#"
         \
          \
@@ -43,6 +39,13 @@ const UNDERSCORE: u8 = b'_';
 // A decent number for SmallVec's Buffer Size, not too large
 // but also big enough for most inputs
 const BUFSIZE: usize = 2048;
+
+#[derive(Copy, Clone, PartialEq, Eq, Debug)]
+#[wasm_bindgen]
+pub enum Who {
+    Ferris,
+    Clippy,
+}
 
 /// Print out Ferris saying something.
 ///
@@ -82,70 +85,78 @@ const BUFSIZE: usize = 2048;
 ///           '_   -   _'
 ///           / '-----' \
 /// ```
+#[wasm_bindgen]
+pub fn say(input: &str, max_width: usize, who: Who) -> Result<String, JsError> {
+    fn inner(input: &str, max_width: usize, who: Who) -> std::io::Result<String> {
+        // Final output is stored here
+        let mut write_buffer = SmallVec::<[u8; BUFSIZE]>::new();
 
-pub fn say<W>(input: &[u8], max_width: usize, writer: &mut W) -> Result<()>
-where
-    W: Write,
-{
-    // Final output is stored here
-    let mut write_buffer = SmallVec::<[u8; BUFSIZE]>::new();
+        // Let textwrap work its magic
+        let wrapped = fill(
+            input,
+            max_width,
+        );
 
-    // Let textwrap work its magic
-    let wrapped = fill(
-        str::from_utf8(input).map_err(|_| std::io::ErrorKind::InvalidData)?,
-        max_width,
-    );
+        let lines: Vec<&str> = wrapped.lines().collect();
 
-    let lines: Vec<&str> = wrapped.lines().collect();
+        let line_count = lines.len();
+        let actual_width = longest_line(&lines);
 
-    let line_count = lines.len();
-    let actual_width = longest_line(&lines);
+        let mut top_bar_buffer: Vec<u8> = repeat(UNDERSCORE).take(actual_width + 2).collect();
+        top_bar_buffer.insert(0, b' ');
 
-    let mut top_bar_buffer: Vec<u8> = repeat(UNDERSCORE).take(actual_width + 2).collect();
-    top_bar_buffer.insert(0, b' ');
+        let mut bottom_bar_buffer: Vec<u8> = repeat(DASH).take(actual_width + 2).collect();
+        bottom_bar_buffer.insert(0, b' ');
 
-    let mut bottom_bar_buffer: Vec<u8> = repeat(DASH).take(actual_width + 2).collect();
-    bottom_bar_buffer.insert(0, b' ');
+        write_buffer.extend_from_slice(&top_bar_buffer);
+        write_buffer.push(NEWLINE);
 
-    write_buffer.extend_from_slice(&top_bar_buffer);
-    write_buffer.push(NEWLINE);
+        for (current_line, line) in lines.into_iter().enumerate() {
+            if line_count == 1 {
+                write_buffer.extend_from_slice(b"< ");
+            } else if current_line == 0 {
+                write_buffer.extend_from_slice(b"/ ");
+            } else if current_line == line_count - 1 {
+                write_buffer.extend_from_slice(b"\\ ");
+            } else {
+                write_buffer.extend_from_slice(ENDSL);
+            }
 
-    for (current_line, line) in lines.into_iter().enumerate() {
-        if line_count == 1 {
-            write_buffer.extend_from_slice(b"< ");
-        } else if current_line == 0 {
-            write_buffer.extend_from_slice(b"/ ");
-        } else if current_line == line_count - 1 {
-            write_buffer.extend_from_slice(b"\\ ");
-        } else {
-            write_buffer.extend_from_slice(ENDSL);
+            let line_len = UnicodeWidthStr::width(line);
+            write_buffer.extend_from_slice(line.as_bytes());
+            for _i in line_len..actual_width {
+                write_buffer.extend_from_slice(b" ");
+            }
+
+            if line_count == 1 {
+                write_buffer.extend_from_slice(b" >\n");
+            } else if current_line == 0 {
+                write_buffer.extend_from_slice(b" \\\n");
+            } else if current_line == line_count - 1 {
+                write_buffer.extend_from_slice(b" /\n");
+            } else {
+                write_buffer.extend_from_slice(ENDSR);
+            }
         }
 
-        let line_len = UnicodeWidthStr::width(line);
-        write_buffer.extend_from_slice(line.as_bytes());
-        for _i in line_len..actual_width {
-            write_buffer.extend_from_slice(b" ");
+        write_buffer.extend_from_slice(&bottom_bar_buffer);
+        match who {
+            Who::Clippy => write_buffer.extend_from_slice(CLIPPY),
+            Who::Ferris => write_buffer.extend_from_slice(FERRIS),
         }
 
-        if line_count == 1 {
-            write_buffer.extend_from_slice(b" >\n");
-        } else if current_line == 0 {
-            write_buffer.extend_from_slice(b" \\\n");
-        } else if current_line == line_count - 1 {
-            write_buffer.extend_from_slice(b" /\n");
-        } else {
-            write_buffer.extend_from_slice(ENDSR);
-        }
+        let mut writer = Vec::with_capacity(write_buffer.len());
+        writer.write_all(&write_buffer)?;
+
+        // SAFETY:
+        // The artwork is known to be ASCII, which is valid UTF-8.
+        // The input is checked to valid utf-8 before it is written to the buffer.
+        // By the time we reach here, the buffer will contain only ASCII bytes
+        let output = unsafe { String::from_utf8_unchecked(writer) };
+        Ok(output)
     }
 
-    write_buffer.extend_from_slice(&bottom_bar_buffer);
-    #[cfg(feature = "clippy")]
-    write_buffer.extend_from_slice(CLIPPY);
-    #[cfg(not(feature = "clippy"))]
-    write_buffer.extend_from_slice(FERRIS);
-    writer.write_all(&write_buffer)?;
-
-    Ok(())
+    inner(input, max_width, who).map_err(JsError::from)
 }
 
 fn longest_line(lines: &[&str]) -> usize {

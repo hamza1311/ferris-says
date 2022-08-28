@@ -1,15 +1,15 @@
-extern crate ferris_says;
+use wasm_bindgen_test::wasm_bindgen_test_configure;
 
-use ferris_says::say;
+wasm_bindgen_test_configure!(run_in_browser);
+
+use ferris_says::{say, Who};
 
 // Default width when running the binary
 const DEFAULT_WIDTH: usize = 40;
 
-#[test]
-fn hello_fellow_rustaceans_width_24() -> Result<(), ()> {
-    //Hello fellow Rustaceans!
-    #[cfg(not(feature = "clippy"))]
-    let expected = br#"
+fn hello_fellow_rustaceans_width_24(who: Who) -> Result<(), ()> {
+    let expected = match who {
+        Who::Ferris => br#"
  __________________________
 < Hello fellow Rustaceans! >
  --------------------------
@@ -19,9 +19,9 @@ fn hello_fellow_rustaceans_width_24() -> Result<(), ()> {
         \) /  o o  \ (/
           '_   -   _'
           / '-----' \
-"#;
-    #[cfg(feature = "clippy")]
-    let expected = br#"
+"#
+        .to_vec(),
+        Who::Clippy => br#"
  __________________________
 < Hello fellow Rustaceans! >
  --------------------------
@@ -36,26 +36,22 @@ fn hello_fellow_rustaceans_width_24() -> Result<(), ()> {
            || ||
            |\_/|
            \___/
-"#;
+"#
+        .to_vec(),
+    };
 
-    let input = b"Hello fellow Rustaceans!";
+    let input = "Hello fellow Rustaceans!";
     let width = 24;
 
-    let mut vec = Vec::new();
-
-    say(input, width, &mut vec).unwrap();
-
-    let actual = std::str::from_utf8(&vec).unwrap();
+    let actual = say(input, width, who).unwrap_or_else(|_| panic!("can't say"));
 
     assert_eq!(std::str::from_utf8(&expected[1..]).unwrap(), actual);
     Ok(())
 }
 
-#[test]
-fn hello_fellow_rustaceans_width_12() -> Result<(), ()> {
-    //Hello fellow Rustaceans!
-    #[cfg(not(feature = "clippy"))]
-    let expected = br#"
+fn hello_fellow_rustaceans_width_12(who: Who) -> Result<(), ()> {
+    let expected = match who {
+        Who::Ferris => br#"
  ______________
 / Hello fellow \
 \ Rustaceans!  /
@@ -66,9 +62,9 @@ fn hello_fellow_rustaceans_width_12() -> Result<(), ()> {
         \) /  o o  \ (/
           '_   -   _'
           / '-----' \
-"#;
-    #[cfg(feature = "clippy")]
-    let expected = br#"
+"#
+        .to_vec(),
+        Who::Clippy => br#"
  ______________
 / Hello fellow \
 \ Rustaceans!  /
@@ -84,26 +80,24 @@ fn hello_fellow_rustaceans_width_12() -> Result<(), ()> {
            || ||
            |\_/|
            \___/
-"#;
+"#
+        .to_vec(),
+    };
 
-    let input = b"Hello fellow Rustaceans!";
+    let input = "Hello fellow Rustaceans!";
     let width = 12;
 
-    let mut vec = Vec::new();
-
-    say(input, width, &mut vec).unwrap();
-
-    let actual = std::str::from_utf8(&vec).unwrap();
+    let actual = say(input, width, who).unwrap_or_else(|_| panic!("can't say"));
 
     assert_eq!(std::str::from_utf8(&expected[1..]).unwrap(), actual);
     Ok(())
 }
 
-#[test]
-fn hello_fellow_rustaceans_width_6() -> Result<(), ()> {
+fn hello_fellow_rustaceans_width_6(who: Who) -> Result<(), ()> {
     //Hello fellow Rustaceans!
     #[cfg(not(feature = "clippy"))]
-    let expected = br#"
+    let expected = match who {
+        Who::Ferris => br#"
  ________
 / Hello  \
 | fellow |
@@ -116,9 +110,9 @@ fn hello_fellow_rustaceans_width_6() -> Result<(), ()> {
         \) /  o o  \ (/
           '_   -   _'
           / '-----' \
-"#;
-    #[cfg(feature = "clippy")]
-    let expected = br#"
+"#
+        .to_vec(),
+        Who::Clippy => br#"
  ________
 / Hello  \
 | fellow |
@@ -136,26 +130,22 @@ fn hello_fellow_rustaceans_width_6() -> Result<(), ()> {
            || ||
            |\_/|
            \___/
-"#;
+"#
+        .to_vec(),
+    };
 
-    let input = b"Hello fellow Rustaceans!";
+    let input = "Hello fellow Rustaceans!";
     let width = 6;
 
-    let mut vec = Vec::new();
-
-    say(input, width, &mut vec).unwrap();
-
-    let actual = std::str::from_utf8(&vec).unwrap();
+    let actual = say(input, width, who).unwrap_or_else(|_| panic!("can't say"));
 
     assert_eq!(std::str::from_utf8(&expected[1..]).unwrap(), actual);
     Ok(())
 }
 
-#[test]
-fn hello_fellow_rustaceans_width_3() -> Result<(), ()> {
-    //Hello fellow Rustaceans!
-    #[cfg(not(feature = "clippy"))]
-    let expected = br#"
+fn hello_fellow_rustaceans_width_3(who: Who) -> Result<(), ()> {
+    let expected = match who {
+        Who::Ferris => br#"
  _____
 / Hel \
 | lo  |
@@ -172,9 +162,9 @@ fn hello_fellow_rustaceans_width_3() -> Result<(), ()> {
         \) /  o o  \ (/
           '_   -   _'
           / '-----' \
-"#;
-    #[cfg(feature = "clippy")]
-    let expected = br#"
+"#
+        .to_vec(),
+        Who::Clippy => br#"
  _____
 / Hel \
 | lo  |
@@ -196,25 +186,23 @@ fn hello_fellow_rustaceans_width_3() -> Result<(), ()> {
            || ||
            |\_/|
            \___/
-"#;
+"#
+        .to_vec(),
+    };
 
-    let input = b"Hello fellow Rustaceans!";
+    let input = "Hello fellow Rustaceans!";
     let width = 3;
 
-    let mut vec = Vec::new();
-
-    say(input, width, &mut vec).unwrap();
-
-    let actual = std::str::from_utf8(&vec).unwrap();
+    let actual = say(input, width, who).unwrap_or_else(|_| panic!("can't say"));
 
     assert_eq!(std::str::from_utf8(&expected[1..]).unwrap(), actual);
     Ok(())
 }
 
-#[test]
-fn multibyte_string() -> Result<(), ()> {
-    #[cfg(not(feature = "clippy"))]
-    let expected = concat!(
+fn multibyte_string(who: Who) -> Result<(), ()> {
+    #[rustfmt::skip]
+    let expected = match who {
+    Who::Ferris => concat!(
         " ____________\n",
         "< 突然の死👻 >\n",
         " ------------\n",
@@ -225,9 +213,8 @@ fn multibyte_string() -> Result<(), ()> {
           '_   -   _'
           / '-----' \
 "#
-    );
-    #[cfg(feature = "clippy")]
-    let expected = concat!(
+        ),
+        Who::Clippy => concat!(
         " ____________\n",
         "< 突然の死👻 >\n",
         " ------------\n",
@@ -243,17 +230,40 @@ fn multibyte_string() -> Result<(), ()> {
            |\_/|
            \___/
 "#
-    );
+        ),
+    };
 
     let input = "突然の死👻";
     let width = DEFAULT_WIDTH;
 
-    let mut vec = Vec::new();
-
-    say(input.as_bytes(), width, &mut vec).unwrap();
-
-    let actual = std::str::from_utf8(&vec).unwrap();
+    let actual = say(input, width, who).unwrap_or_else(|_| panic!("can't say"));
 
     assert_eq!(std::str::from_utf8(&expected.as_bytes()).unwrap(), actual);
     Ok(())
 }
+
+macro_rules! tests {
+    ($($name:ident),*) => {
+        $(
+            paste::paste! {
+                #[wasm_bindgen_test::wasm_bindgen_test]
+                fn [<test_ $name _with_ferris>]() {
+                    $name(Who::Ferris).unwrap();
+                }
+
+                #[wasm_bindgen_test::wasm_bindgen_test]
+                fn [<test_ $name _with_clippy>]() {
+                    $name(Who::Clippy).unwrap();
+                }
+            }
+        )*
+    };
+}
+
+tests!(
+    hello_fellow_rustaceans_width_24,
+    hello_fellow_rustaceans_width_12,
+    hello_fellow_rustaceans_width_6,
+    hello_fellow_rustaceans_width_3,
+    multibyte_string
+);

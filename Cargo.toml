@@ -15,22 +15,26 @@ categories = [
   "command-line-utilities",
   "value-formatting"
 ]
-license = "MIT/Apache-2.0"
-
-[badges]
-travis-ci = { repository = "mgattozzi/ferris-says", branch = "master" }
-appveyor = { repository = "mgattozzi/ferris-says", branch = "master", service = "github" }
+license = "MIT OR Apache-2.0"
+edition = "2021"
 
 [lib]
 name = "ferris_says"
+crate-type = ["cdylib", "rlib"]
 
 [features]
 clippy = []
 
 [dependencies]
+js-sys = "0.3.59"
 smallvec = "1.9.0"
-textwrap = "0.13"
-unicode-width = "0.1.7"
+textwrap = "0.15"
+unicode-width = "0.1.9"
+wasm-bindgen = "0.2.82"
+
+[dev-dependencies]
+wasm-bindgen-test = "0.3"
+paste = "1"
 
 [workspace]
 members = ["fsays"]
